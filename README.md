@@ -114,24 +114,38 @@ Follow these steps to set up the environment, position the data file correctly, 
 
 ### Prerequisites
 Make sure you have [Python 3.8+](https://python.org) installed on your machine.
+This project uses **Git LFS (Large File Storage)** to manage the 147 MB dataset (`creditcard_data.csv`). 
+
+Before cloning this repository, you **must** have Git LFS installed on your machine, otherwise your local scripts will only download a broken text pointer file.
+
+* **Windows**: Download and run the installer from [git-lfs.com](https://git-lfs.com) (or run `git lfs install` if you already have it).
+* **Mac**: Run `brew install git-lfs`
+* **Linux**: Run `sudo apt-get install git-lfs`
 
 ### Setup & Installation
 
 1. **Clone the project repository:**
    ```bash
-   git clone https://github.com
+   git clone https://github.com/RachanaSubramanya/fraud_detection_model/tree/main
    cd fraud_detection_model
    ```
 
-2. **Create and activate a virtual environment (Recommended):**
+2. 2. **Initialize Git LFS and pull the dataset:**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   git lfs install
+   git lfs pull
    ```
 
-3. **Install the required packages:**
+3. **Create and activate a virtual environment (Recommended):**
    ```bash
-   pip install numpy pandas matplotlib seaborn scikit-learn imbalanced-learn
+   python -m venv venv
+   # On Windows use: venv\Scripts\activate
+   # On Mac/Linux use: source venv/bin/activate
+   ```
+
+4. **Install the required packages:**
+   ```bash
+   pip install -r requirements.txt        
    ```
 
 ### Data Preparation
