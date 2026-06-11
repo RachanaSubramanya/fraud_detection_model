@@ -82,7 +82,7 @@ Your codebase executes explicit processing actions to safeguard model integrity:
 * **Path Standardization:** Uses `os.path.abspath(__file__)` to eliminate manual pathing errors regardless of whether the script is run locally or in a remote production container.
 * **Deterministic Splitting:** Utilizes a `train_test_split` with a fixed `random_state=42` to guarantee reproducible experimental runs.
 * **Stratified Sampling:** Enforces `stratify=Y` during splitting. This preserves the exact minority-to-majority ratio in both training and test subsets, preventing data distribution shifts.
-* **Synthetic Synthetic Over-sampling (SMOTE):** Dynamically generates artificial minority instances on the training subset using `sampling_strategy=0.1`. This steps the fraud class up to exactly $10\%$ of the majority class size before the data hits the classifier, preventing the model from ignoring fraud patterns.
+* **Synthetic Minority Over-sampling (SMOTE):** Dynamically generates artificial minority instances on the training subset using `sampling_strategy=0.1`. This steps the fraud class up to exactly $10\%$ of the majority class size before the data hits the classifier, preventing the model from ignoring fraud patterns.
 
 ---
 
