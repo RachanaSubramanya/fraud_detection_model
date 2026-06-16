@@ -149,10 +149,10 @@ Before cloning this repository, you **must** have Git LFS installed on your mach
    source venv/bin/activate
 
    # Activate on Windows (Command Prompt):
-   venv\Scripts\activate
+   venv\scripts\activate
 
    # Activate on Windows (PowerShell):
-   .\venv\Scripts\Activate.ps1
+   .\venv\scripts\Activate.ps1
    ```
 
 3. **Install the required packages:**
