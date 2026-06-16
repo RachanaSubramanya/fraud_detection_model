@@ -1,6 +1,9 @@
 # Fraud detection model
 
-_This repository contains a machine learning pipeline engineered to detect fraudulent credit card transactions. The project addresses extreme class imbalance using advanced resampling techniques and evaluates performance using metrics suited for highly skewed datasets.._
+_This project features an end-to-end machine learning pipeline engineered to detect fraudulent credit card transactions. To combat extreme class imbalance, the project utilizes advanced resampling techniques like SMOTE alongside robust evaluation metrics suited for highly skewed datasets.
+The repository is structured into two focused components:
+* compiled_model_results.py (Evaluation): A benchmarking pipeline that analyzes multiple machine learning architectures side-by-side to track precision-recall trade-offs and evaluate hyperparameter grid searches.
+* fraud_detection_model.py (Production): An isolated script deploying the finalized RandomForestClassifier, which was proven through experimentation to be the most operationally stable and efficient model._
 
 ---
 
@@ -13,9 +16,7 @@ _This repository contains a machine learning pipeline engineered to detect fraud
 - <a href= "#data-cleaning-preparation">Data Cleaning and Preparation</a>
 - <a href= "#exploratory-data-analysis">Exploatory Data Analysis</a>
 - <a href= "#research-questions-key-findings">Research questions and Key findings</a>
-- <a href= "#dashboard">Dashboard</a>
 - <a href= "#how-to-run-this-project">How to run this project</a>
-- <a href= "#final-recommendations">Final Recommendations</a>
 - <a href= "#author-contact">Author & Contact</a>
 
 ---
@@ -23,6 +24,7 @@ _This repository contains a machine learning pipeline engineered to detect fraud
 <h2><a class="anchor" id="overview"></a>Overview</h2>
 
 The project analyzes transactional data to identify anomalous patterns indicative of fraud. Because fraud data is notoriously sparse, the codebase implements a robust preprocessing and modeling workflow:
+* **Experimental Run:** Compares the results of various algorithms to identify the best fit model.
 * **Exploratory Data Analysis:** Visualises dataset correlations and distributions.
 * **Imbalance Handling:** Utilises Synthetic Minority Over-sampling Technique (SMOTE) to synthetically balance training classes safely.
 * **Classification Algorithm:** Trains a Random Forest Classifier with balanced class weights to maximize fraud isolation.
@@ -51,9 +53,11 @@ The pipeline expects a structured format to locate files dynamically across diff
 The infrastructure of this pipeline is built entirely in Python, utilizing industry-standard libraries for data science and statistical modeling:
 
 * **Core Engine:** [Python 3.8+](https://python.org)
+* **Development Environment:** Visual Studio Code
 * **Data Manipulation:** [Pandas](https://pydata.org) & [NumPy](https://numpy.org)
 * **Machine Learning Pipeline:** [Scikit-Learn](https://scikit-learn.org)
 * **Imbalance & Resampling:** [Imbalanced-Learn (SMOTE)](https://imbalanced-learn.org)
+* **Gradient Boosting Ensemble: XGBoost
 * **Data Visualization:** [Matplotlib](https://matplotlib.org) & [Seaborn](https://pydata.org)
 * **Environment Logic:** Built-in `os` system path utilities
 
@@ -61,8 +65,9 @@ The infrastructure of this pipeline is built entirely in Python, utilizing indus
 
 <h2><a class="anchor" id="project-structure"></a>Project Structures</h2>
 
-```text
+```
 fraud_detection_model/
+│   .gitattributes
 │   .gitignore
 │   README.md
 │   requirements.txt
@@ -70,7 +75,12 @@ fraud_detection_model/
 ├───data
 │       creditcard_data.csv
 │
+├───plots
+│       confusion_matrix.png
+│       correlation_matrix.png
+│
 └───scripts
+        compiled_model_results.py
         fraud_detection_model.py
 ```
 
@@ -113,47 +123,82 @@ Upon termination, the model bypasses baseline accuracy scores (which are often m
 Follow these steps to set up the environment, position the data file correctly, and execute the fraud detection model.
 
 ### Prerequisites
-Make sure you have [Python 3.8+](https://python.org) installed on your machine.
+Make sure you have [Python 3.8+](https://python.org) installed on your machine. This project uses **Git LFS (Large File Storage)** to manage the 143 MB dataset (`creditcard_data.csv`). 
+
+Before cloning this repository, you **must** have Git LFS installed on your machine, otherwise your local scripts will only download a broken text pointer file.
+
+* **Windows**: Download and run the installer from [git-lfs.com](https://git-lfs.com) (or run `git lfs install` if you already have it).
+* **Mac**: Run `brew install git-lfs`
+* **Linux**: Run `sudo apt-get install git-lfs`
 
 ### Setup & Installation
 
 1. **Clone the project repository:**
+
    ```bash
-   git clone https://github.com
+   git clone https://github.com/RachanaSubramanya/fraud_detection_model/tree/main
    cd fraud_detection_model
    ```
 
 2. **Create and activate a virtual environment (Recommended):**
+
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+
+   # Activate on macOS/Linux:
+   source venv/bin/activate
+
+   # Activate on Windows (Command Prompt):
+   venv\Scripts\activate
+
+   # Activate on Windows (PowerShell):
+   .\venv\Scripts\Activate.ps1
    ```
 
 3. **Install the required packages:**
+
    ```bash
-   pip install numpy pandas matplotlib seaborn scikit-learn imbalanced-learn
+   pip install -r requirements.txt
    ```
 
 ### Data Preparation
 The script expects a specific folder structure to locate the dataset. Make sure your project directory looks exactly like this:
 
-```text
+```
 fraud_detection_model/
 ├── data/
 │   └── creditcard_data.csv   <-- Place your dataset here
-└── src/
+└── scripts/
     └── fraud_detection_model.py   <-- Your python script file
 ```
 
 ### Running the Program
-Navigate to the directory containing your script and run it using Python:
+Navigate to the directory containing the script `fraud_detection_model.py` and run it using Python:
 
 ```bash
-cd src
+cd scripts
 python fraud_detection_model.py
 ```
 
-*Note: Running the program will output model performance metrics (Accuracy, Precision, Recall, F1-Score, MCC) directly to your terminal and display two visual plots (Correlation Heatmap and Confusion Matrix).*
+*Note: Running the program will output model performance metrics (Accuracy, Precision, Recall, F1-Score, MCC) directly to your terminal, while 2 visual plots (Correlation Heatmap and Confusion Matrix) will be generated in the background and saved into the folder `plots/` within the main project repository.*
+
+
+### Understanding the Experimentation process (Optional)
+Navigate to the directory containing the script `compiled_model_results.py` and run it using Python:
+
+```bash
+cd scripts
+python compiled_model_results.py
+```
+
+### Environment Cleanup
+
+Once your modeling session concludes and you wish to exit the isolated environment, execute the following command from any directory within your terminal:
+
+```bash
+deactivate
+```
+This instantly restores your system's global Python context.
 
 ---
 

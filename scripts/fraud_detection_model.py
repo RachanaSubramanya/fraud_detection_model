@@ -8,7 +8,7 @@ import os
 
 #loading the data
 script_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(script_dir, "..", "data", "creditcard data.csv")
+data_path = os.path.join(script_dir, "..", "data", "creditcard_data.csv")
 data = pd.read_csv(data_path)
 
 print(data.head())
@@ -26,12 +26,14 @@ print("Valid transactions: {}".format(len(valid)))
 print("Amount details of the fraudulent transactions", fraud.Amount.describe())
 print("Amount details of the valid transactions", valid.Amount.describe())
 
-#plottig correlation matrix
+#plotting correlation matrix
 corrmat = data.corr()
 fig = plt.figure(figsize=(12,9))
 sns.heatmap(corrmat, vmax=0.8, square=True)
 plt.title("Correlation Matrix", fontsize=16, fontweight='bold', pad=20)
-plt.show()
+plt.savefig(os.path.join(script_dir, "..", "plots", "correlation_matrix.png"))
+plt.close()
+print("Correlation matrix plotted and saved to repository 'plots' successfully.")
 
 #preparing data
 X = data.drop(['Class'], axis=1)
@@ -52,14 +54,18 @@ from imblearn.over_sampling import SMOTE
 sm = SMOTE(sampling_strategy=0.1, random_state=42)
 xTrain_res, yTrain_res = sm.fit_resample(xTrain, yTrain )
 
+#training the data with all the algorithms
+print("--- Training Started (This will take a few minutes) ---")
+
 #fitting a random forest classifier
+print("step 1: Fitting a Random Forest Classifier...")
 from sklearn.ensemble import RandomForestClassifier
 rfc = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
 rfc.fit(xTrain_res, yTrain_res)
 yPred = rfc.predict(xTest)
 
-
 #evaluating the model metrics
+print("step 2: Evaluating the model...")
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                              f1_score, matthews_corrcoef, confusion_matrix, classification_report)
 accuracy = accuracy_score(yTest, yPred)
@@ -67,6 +73,7 @@ precision = precision_score(yTest, yPred)
 recall = recall_score(yTest, yPred)
 f1 = f1_score(yTest, yPred)
 mcc = matthews_corrcoef(yTest, yPred)
+print("Model evaluation completed.")
 
 print("Model evaluation metrics:")
 print(f"Accuracy: {accuracy:.4f}")
@@ -75,8 +82,12 @@ print(f"Recall: {recall:.4f}")
 print(f"F1-score: {f1:.4f}")
 print(f"Mathew's Correlation Coefficient: {mcc:.4f}")
 
-print("\nDetailed Report:")
+# Printing a detailed classification report onto the terminal
+print("\n" + "="*100)
+print("\n         Detailed Report:")
+print("\n" + "="*100)
 print(classification_report(yTest, yPred))
+print("\n" + "="*100)
 
 #creating a confusion matrix to visualise the predictions of the model
 conf_mat = confusion_matrix(yTest, yPred)
@@ -86,7 +97,8 @@ sns.heatmap(conf_mat, annot=True, fmt="d", cmap="Blues",
 plt.title("Confusion matrix")
 plt.xlabel("Predicted class")
 plt.ylabel("True class")
-plt.show()
+plt.savefig(os.path.join(script_dir, "..", "plots", "confusion_matrix.png"))
+print("Confusion matrix plotted and saved to repository 'plots' successfully.")
 
 #creating a dataframe for the prediction results
 results = pd.DataFrame(xTest, columns=X.columns)
