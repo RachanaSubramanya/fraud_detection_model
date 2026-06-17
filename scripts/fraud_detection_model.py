@@ -8,7 +8,7 @@ import os
 
 #loading the data
 script_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(script_dir, "..", "data", "creditcard_data.csv")
+data_path = os.path.join(scripts_dir, "..", "data", "creditcard_data.csv")
 data = pd.read_csv(data_path)
 
 print(data.head())
