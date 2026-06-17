@@ -135,3 +135,4 @@ print(comparison_df.to_string(index=False, formatters={
 }))
 print("="*100)
 
+print("Taking into account all the metrics and especially Matthew's Correlation Coefficient, we can conclude that the RandomForestClassifer is the best fit model.")
