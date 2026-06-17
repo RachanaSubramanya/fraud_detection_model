@@ -1,9 +1,9 @@
 # Fraud detection model
 
-_This project features an end-to-end machine learning pipeline engineered to detect fraudulent credit card transactions. To combat extreme class imbalance, the project utilizes advanced resampling techniques like SMOTE alongside robust evaluation metrics suited for highly skewed datasets.
-The repository is structured into two focused components:
-* compiled_model_results.py (Evaluation): A benchmarking pipeline that analyzes multiple machine learning architectures side-by-side to track precision-recall trade-offs and evaluate hyperparameter grid searches.
-* fraud_detection_model.py (Production): An isolated script deploying the finalized RandomForestClassifier, which was proven through experimentation to be the most operationally stable and efficient model._
+_This project features an end-to-end machine learning pipeline engineered to detect fraudulent credit card transactions. To combat extreme class imbalance, the project utilizes advanced resampling techniques like SMOTE alongside robust evaluation metrics suited for highly skewed datasets._
+_The repository is structured into two focused components:_
+_* compiled_model_results.py (Evaluation): A benchmarking pipeline that analyzes multiple machine learning architectures side-by-side to track precision-recall trade-offs and evaluate hyperparameter grid searches._
+_* fraud_detection_model.py (Production): An isolated script deploying the finalized RandomForestClassifier, which was proven through experimentation to be the most operationally stable and efficient model._
 
 ---
 
