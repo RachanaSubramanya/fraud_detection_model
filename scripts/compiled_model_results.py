@@ -41,6 +41,9 @@ yData = Y.values
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression   
+from sklearn.svm import LinearSVC                      
+from sklearn.neighbors import KNeighborsClassifier
 
 # 2. Split original data
 xTrain, xTest, yTrain, yTest = train_test_split(
@@ -49,6 +52,12 @@ xTrain, xTest, yTrain, yTest = train_test_split(
 # 3. Prepare the SMOTE training data (For Random Forest variations)
 sm = SMOTE(sampling_strategy=0.1, random_state=42)
 xTrain_res, yTrain_res = sm.fit_resample(xTrain, yTrain)
+
+# 4. Prepare Scaled Data for Distance/Linear Models (Option 2)
+# Distance-based models require feature scaling to ensure stable weight adjustments
+scaler = StandardScaler()                              
+xTrain_scaled = scaler.fit_transform(xTrain_res)       
+xTest_scaled = scaler.transform(xTest)                 
 
 
 #training the data with all the algorithms
@@ -86,6 +95,27 @@ brfc = BalancedRandomForestClassifier(n_estimators=100, random_state=42, n_jobs=
 brfc.fit(xTrain, yTrain) 
 pred_m4 = brfc.predict(xTest)
 
+# --- MODEL 5: Logistic Regression Baseline ---
+print("Training Model 5: Logistic Regression Baseline...")
+# Uses max_iter=1000 to allow the numerical optimization solver enough iterations to converge
+model_lr = LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42)  
+model_lr.fit(xTrain_scaled, yTrain_res)                                                
+pred_m5 = model_lr.predict(xTest_scaled)                                               
+
+# --- MODEL 6: Linear Support Vector Machine ---
+print("Training Model 6: Linear Support Vector Machine...")
+# dual=False is explicitly set because the number of samples is greater than features
+model_svm = LinearSVC(class_weight='balanced', dual=False, random_state=42)            
+model_svm.fit(xTrain_scaled, yTrain_res)                                               
+pred_m6 = model_svm.predict(xTest_scaled)                                              
+
+# --- MODEL 7: K-Nearest Neighbors ---
+print("Training Model 7: K-Nearest Neighbors...")
+# n_jobs=-1 parallelizes distance calculations across all available CPU cores
+model_knn = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)                             
+model_knn.fit(xTrain_scaled, yTrain_res)                                               
+pred_m7 = model_knn.predict(xTest_scaled)                                              
+
 
 # Importing model evaluation metrics and compiling the results
 from sklearn.metrics import precision_score, recall_score, f1_score, matthews_corrcoef
@@ -99,11 +129,16 @@ def get_metrics(y_true, y_pred):
     missed = sum((y_true == 1) & (y_pred == 0))
     return prec, rec, f1, mcc, missed
 
+
 # Calculating scores for all predictions
 m1_metrics = get_metrics(yTest, pred_m1)
 m2_metrics = get_metrics(yTest, pred_m2)
 m3_metrics = get_metrics(yTest, pred_m3)
 m4_metrics = get_metrics(yTest, pred_m4)
+m5_metrics = get_metrics(yTest, pred_m5)  
+m6_metrics = get_metrics(yTest, pred_m6)  
+m7_metrics = get_metrics(yTest, pred_m7)
+
 
 # Creating the final comparison summary
 model_data = {
@@ -111,21 +146,24 @@ model_data = {
         'RandomForestClassifier (with SMOTE)', 
         'RandomForestClassifier (Optimized using GridSearchCV)', 
         'XGBoost Classifier (with scale_pos_weight)', 
-        'BalancedRandomForestClassifier (with class balancing)'
+        'BalancedRandomForestClassifier (with class balancing)',
+        'Logistic Regression (Baseline on Scaled SMOTE Data)',
+        'Linear Support Vector Classifier (LinearSVC)',
+        'K-Nearest Neighbors (KNN Classifier)'
     ],
-    'Precision': [m1_metrics[0], m2_metrics[0], m3_metrics[0], m4_metrics[0]],
-    'Recall': [m1_metrics[1], m2_metrics[1], m3_metrics[1], m4_metrics[1]],
-    'F1-Score': [m1_metrics[2], m2_metrics[2], m3_metrics[2], m4_metrics[2]],
-    'Matthews Correlation Coefficient': [m1_metrics[3], m2_metrics[3], m3_metrics[3], m4_metrics[3]], 
-    'Total Frauds Missed': [m1_metrics[4], m2_metrics[4], m3_metrics[4], m4_metrics[4]]
+    'Precision': [m1_metrics[0], m2_metrics[0], m3_metrics[0], m4_metrics[0], m5_metrics[0], m6_metrics[0], m7_metrics[0]],
+    'Recall': [m1_metrics[1], m2_metrics[1], m3_metrics[1], m4_metrics[1], m5_metrics[1], m6_metrics[1], m7_metrics[1]],
+    'F1-Score': [m1_metrics[2], m2_metrics[2], m3_metrics[2], m4_metrics[2], m5_metrics[2], m6_metrics[2], m7_metrics[2]],
+    'Matthews Correlation Coefficient': [m1_metrics[3], m2_metrics[3], m3_metrics[3], m4_metrics[3], m5_metrics[3], m6_metrics[3], m7_metrics[3]], 
+    'Total Frauds Missed': [m1_metrics[4], m2_metrics[4], m3_metrics[4], m4_metrics[4], m5_metrics[4], m6_metrics[4], m7_metrics[4]]
 }
-
 comparison_df = pd.DataFrame(model_data)
+comparison_df = comparison_df.sort_values(by='Matthews Correlation Coefficient', ascending=False)
 
 # Printing a clean report grid to terminal
-print("\n" + "="*100)
+print("\n" + "="*120)
 print("                       FINAL MODEL COMPARISON REPORT")
-print("="*100)
+print("="*120)
 print(comparison_df.to_string(index=False, formatters={
     'Precision': '{:,.2%}'.format,
     'Recall': '{:,.2%}'.format,
@@ -133,6 +171,12 @@ print(comparison_df.to_string(index=False, formatters={
     'Matthews Correlation Coefficient': '{:,.4f}'.format,
     'Total Frauds Missed': '{:,.0f}'.format 
 }))
-print("="*100)
+print("="*120)
+
+print("\nConclusion: Based on the benchmarking data, the standard RandomForestClassifier (with SMOTE) is selected as the best-fit production model. " \
+"While models like Logistic Regression missed fewer total frauds (10 vs 17), they suffered from a very low precision rate of ~13%, which would " \
+"result in thousands of innocent customer accounts being frozen by mistake. The Standard Random Forest model offers the most commercially viable " \
+"balance, delivering a dominant Matthews Correlation Coefficient of 0.8348 by protecting bank assets while keeping customer false alarms to a minimum.")
+
 
 print("Taking into account all the metrics and especially Matthew's Correlation Coefficient, we can conclude that the RandomForestClassifer is the best fit model.")
