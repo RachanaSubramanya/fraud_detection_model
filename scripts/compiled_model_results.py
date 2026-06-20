@@ -1,182 +1,125 @@
-#importing necessary libraries
+# importing necessary libraries
+import os
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import sklearn as sk
-import os
-
-#loading the data
-script_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(script_dir, "..", "data", "creditcard_data.csv")
-data = pd.read_csv(data_path)
-
-print(data.head())
-print(data.describe())
-
-#understanding class distribution of dataset
-fraud = data[data['Class'] == 1]
-valid = data[data['Class'] == 0]
-classRatio = len(fraud)/len(valid)
-print(f"Ratio of classes: {classRatio} i.e. {classRatio*100:.4f}%" )
-print("Fraud transactions: {}".format(len(fraud)))
-print("Valid transactions: {}".format(len(valid)))
-
-#understanding amount details of transactions
-print("Amount details of the fraudulent transactions", fraud.Amount.describe())
-print("Amount details of the valid transactions", valid.Amount.describe())  
-
-#preparing data
-X = data.drop(['Class'], axis=1)
-Y = data['Class']
-print(X.shape)
-print(Y.shape)
-
-xData = X.values
-yData = Y.values
-
-
-#preparing the data for training and testing using different algorithms
-# 1. importing necessary libraries
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression   
-from sklearn.svm import LinearSVC                      
-from sklearn.neighbors import KNeighborsClassifier
-
-# 2. Split original data
-xTrain, xTest, yTrain, yTest = train_test_split(
-    xData, yData, test_size=0.2, random_state=42, stratify=Y) 
-
-# 3. Prepare the SMOTE training data (For Random Forest variations)
-sm = SMOTE(sampling_strategy=0.1, random_state=42)
-xTrain_res, yTrain_res = sm.fit_resample(xTrain, yTrain)
-
-# 4. Prepare Scaled Data for Distance/Linear Models (Option 2)
-# Distance-based models require feature scaling to ensure stable weight adjustments
-scaler = StandardScaler()                              
-xTrain_scaled = scaler.fit_transform(xTrain_res)       
-xTest_scaled = scaler.transform(xTest)                 
-
-
-#training the data with all the algorithms
-print("--- Training Started (This will take a few minutes) ---")
-
-# --- MODEL 1: Standard Random Forest ---
-print("Training Model 1: Standard Random Forest...")
-from sklearn.ensemble import RandomForestClassifier
-rfc = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42, n_jobs=-1)
-rfc.fit(xTrain_res, yTrain_res)
-pred_m1 = rfc.predict(xTest)
-
-# --- MODEL 2: Optimized Random Forest ---
-print("Training Model 2: Optimized Random Forest...")
-# A GridSearchCV was performed offline to find the best parameters, which are now used to train the optimized model
-# The GridSearchCV code and results are not included here to keep the script focused on the final model training and evaluation
-rfc_opt = RandomForestClassifier(n_estimators=150, max_depth=None, min_samples_split=2, 
-                                 class_weight='balanced', random_state=42, n_jobs=-1)
-rfc_opt.fit(xTrain_res, yTrain_res)
-pred_m2 = rfc_opt.predict(xTest)
-
-# --- MODEL 3: XGBoost Classifier ---
-print("Training Model 3: XGBoost Classifier...")
-from xgboost import XGBClassifier
-scale_factor = sum(yTrain == 0) / sum(yTrain == 1)
-xgb_model = XGBClassifier(n_estimators=150, learning_rate=0.05, max_depth=5, scale_pos_weight=scale_factor, 
-                          random_state=42, eval_metric='logloss', n_jobs=-1)
-xgb_model.fit(xTrain, yTrain) # Note: XGBoost can handle imbalance with scale_pos_weight, so we use the original training data
-pred_m3 = xgb_model.predict(xTest)
-
-# --- MODEL 4: Balanced Random Forest ---
-print("Training Model 4: Balanced Random Forest...")
-from imblearn.ensemble import BalancedRandomForestClassifier
-brfc = BalancedRandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
-brfc.fit(xTrain, yTrain) 
-pred_m4 = brfc.predict(xTest)
-
-# --- MODEL 5: Logistic Regression Baseline ---
-print("Training Model 5: Logistic Regression Baseline...")
-# Uses max_iter=1000 to allow the numerical optimization solver enough iterations to converge
-model_lr = LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42)  
-model_lr.fit(xTrain_scaled, yTrain_res)                                                
-pred_m5 = model_lr.predict(xTest_scaled)                                               
-
-# --- MODEL 6: Linear Support Vector Machine ---
-print("Training Model 6: Linear Support Vector Machine...")
-# dual=False is explicitly set because the number of samples is greater than features
-model_svm = LinearSVC(class_weight='balanced', dual=False, random_state=42)            
-model_svm.fit(xTrain_scaled, yTrain_res)                                               
-pred_m6 = model_svm.predict(xTest_scaled)                                              
-
-# --- MODEL 7: K-Nearest Neighbors ---
-print("Training Model 7: K-Nearest Neighbors...")
-# n_jobs=-1 parallelizes distance calculations across all available CPU cores
-model_knn = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)                             
-model_knn.fit(xTrain_scaled, yTrain_res)                                               
-pred_m7 = model_knn.predict(xTest_scaled)                                              
-
-
-# Importing model evaluation metrics and compiling the results
 from sklearn.metrics import precision_score, recall_score, f1_score, matthews_corrcoef
 
-# Creating a function to generate clean lists containing the results of each model 
+# --- LOCAL PACKAGED MODULE IMPORTS ---
+from scripts.algorithms import (
+    train_standard_rfc, train_optimized_rfc, train_xgboost, 
+    train_balanced_rfc, train_logistic_regression, train_linear_svc, train_knn
+)
+
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import StandardScaler
+
+def smote_resampled(x_train, y_train):
+    # Rebalanceing the dataset rows using SMOTE.
+    sm = SMOTE(sampling_strategy=0.1, random_state=42)
+    x_train_res, y_train_res = sm.fit_resample(x_train, y_train)
+    return x_train_res, y_train_res
+
+
+def scale_data(x_train_res, x_test):    
+    # Standardizing column scales for distance-based models.
+    scaler = StandardScaler()
+    x_train_scaled = scaler.fit_transform(x_train_res)       
+    x_test_scaled = scaler.transform(x_test)                 
+    return x_train_scaled, x_test_scaled
+
+
 def get_metrics(y_true, y_pred):
+    # Calculating standardized metrics grid for transaction evaluation.
     prec = precision_score(y_true, y_pred)
     rec = recall_score(y_true, y_pred)
     f1 = f1_score(y_true, y_pred)
     mcc = matthews_corrcoef(y_true, y_pred) 
-    missed = sum((y_true == 1) & (y_pred == 0))
-    return prec, rec, f1, mcc, missed
+    missed_frauds = sum((y_true == 1) & (y_pred == 0))
+    return prec, rec, f1, mcc, missed_frauds
 
 
-# Calculating scores for all predictions
-m1_metrics = get_metrics(yTest, pred_m1)
-m2_metrics = get_metrics(yTest, pred_m2)
-m3_metrics = get_metrics(yTest, pred_m3)
-m4_metrics = get_metrics(yTest, pred_m4)
-m5_metrics = get_metrics(yTest, pred_m5)  
-m6_metrics = get_metrics(yTest, pred_m6)  
-m7_metrics = get_metrics(yTest, pred_m7)
+def model_evaluation():
+    # Loading dataset
+    print("\n--- Starting Evaluation ---\n")
+    print("Loading dataset...")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(script_dir, "..", "data", "creditcard_data.csv")
+    data = pd.read_csv(data_path)
+
+    # Setting up training and testing datasets
+    print("Undergoing pre-processing steps...)")
+    X = data.drop(['Class'], axis=1).values
+    Y = data['Class'].values
+    xTrain, xTest, yTrain, yTest = train_test_split(X, Y, test_size=0.2, random_state=42, stratify=Y) 
+
+    # applying SMOTE resampling to balance the training dataset for tree-based models 
+    print("Applying SMOTE resampling...")
+    xTrain_res, yTrain_res = smote_resampled(xTrain, yTrain)
+
+    # applying feature scaling to the resampled training data and original test data for distance-based models
+    print("Applying Feature Scaling to resampled data...")
+    xTrain_scaled, xTest_scaled = scale_data(xTrain_res, xTest)
 
 
-# Creating the final comparison summary
-model_data = {
-    'Model Strategy': [
-        'RandomForestClassifier (with SMOTE)', 
-        'RandomForestClassifier (Optimized using GridSearchCV)', 
-        'XGBoost Classifier (with scale_pos_weight)', 
-        'BalancedRandomForestClassifier (with class balancing)',
-        'Logistic Regression (Baseline on Scaled SMOTE Data)',
-        'Linear Support Vector Classifier (LinearSVC)',
-        'K-Nearest Neighbors (KNN Classifier)'
-    ],
-    'Precision': [m1_metrics[0], m2_metrics[0], m3_metrics[0], m4_metrics[0], m5_metrics[0], m6_metrics[0], m7_metrics[0]],
-    'Recall': [m1_metrics[1], m2_metrics[1], m3_metrics[1], m4_metrics[1], m5_metrics[1], m6_metrics[1], m7_metrics[1]],
-    'F1-Score': [m1_metrics[2], m2_metrics[2], m3_metrics[2], m4_metrics[2], m5_metrics[2], m6_metrics[2], m7_metrics[2]],
-    'Matthews Correlation Coefficient': [m1_metrics[3], m2_metrics[3], m3_metrics[3], m4_metrics[3], m5_metrics[3], m6_metrics[3], m7_metrics[3]], 
-    'Total Frauds Missed': [m1_metrics[4], m2_metrics[4], m3_metrics[4], m4_metrics[4], m5_metrics[4], m6_metrics[4], m7_metrics[4]]
-}
-comparison_df = pd.DataFrame(model_data)
-comparison_df = comparison_df.sort_values(by='Matthews Correlation Coefficient', ascending=False)
+    print("\n--- Training Benchmark Grid Started ---")
+    print("This will take a few moments as we are training 7 different models for benchmarking purposes\n")
 
-# Printing a clean report grid to terminal
-print("\n" + "="*120)
-print("                       FINAL MODEL COMPARISON REPORT")
-print("="*120)
-print(comparison_df.to_string(index=False, formatters={
-    'Precision': '{:,.2%}'.format,
-    'Recall': '{:,.2%}'.format,
-    'F1-Score': '{:,.2%}'.format,
-    'Matthews Correlation Coefficient': '{:,.4f}'.format,
-    'Total Frauds Missed': '{:,.0f}'.format 
-}))
-print("="*120)
+    print("Training Model 1: Standard Random Forest Classifier...")
+    pred_m1 = train_standard_rfc(xTrain_res, yTrain_res, xTest)
 
-print("\nConclusion: Based on the benchmarking data, the standard RandomForestClassifier (with SMOTE) is selected as the best-fit production model. " \
-"While models like Logistic Regression missed fewer total frauds (10 vs 17), they suffered from a very low precision rate of ~13%, which would " \
-"result in thousands of innocent customer accounts being frozen by mistake. The Standard Random Forest model offers the most commercially viable " \
-"balance, delivering a dominant Matthews Correlation Coefficient of 0.8348 by protecting bank assets while keeping customer false alarms to a minimum.")
+    print("Training Model 2: Optimized Random Forest Classifier...")
+    pred_m2 = train_optimized_rfc(xTrain_res, yTrain_res, xTest)
 
+    print("Training Model 3: XGBoost Classifier...")
+    pred_m3 = train_xgboost(xTrain, yTrain, xTest)
 
-print("Taking into account all the metrics and especially Matthew's Correlation Coefficient, we can conclude that the RandomForestClassifer is the best fit model.")
+    print("Training Model 4: Balanced Random Forest Classifier...")
+    pred_m4 = train_balanced_rfc(xTrain, yTrain, xTest)
+
+    print("Training Model 5: Logistic Regression...")
+    pred_m5 = train_logistic_regression(xTrain_scaled, yTrain_res, xTest_scaled)
+
+    print("Training Model 6: Linear Support Vector Classifier...")
+    pred_m6 = train_linear_svc(xTrain_scaled, yTrain_res, xTest_scaled)
+
+    print("Training Model 7: K-Nearest Neighbors Classifier...")
+    pred_m7 = train_knn(xTrain_scaled, yTrain_res, xTest_scaled)
+
+    print("\nAll models trained successfully. Compiling metrics for each model...\n")                                              
+
+    # Compiling metrics for all models into a comprehensive comparison report
+    all_metrics = [get_metrics(yTest, p) for p in [pred_m1, pred_m2, pred_m3, pred_m4, pred_m5, pred_m6, pred_m7]]
+    
+    model_data = {
+        'Model Strategy': [
+            'RandomForestClassifier (with SMOTE)', 'RandomForestClassifier (Optimized using GridSearchCV)', 
+            'XGBoost Classifier (with scale_pos_weight)', 'BalancedRandomForestClassifier (with internal class balancing)',
+            'Logistic Regression (Baseline on Scaled SMOTE Data)', 'Linear Support Vector Classifier (LinearSVC)', 'K-Nearest Neighbors (KNN Classifier)'
+        ],
+        'Precision': [m[0] for m in all_metrics],
+        'Recall': [m[1] for m in all_metrics],
+        'F1-Score': [m[2] for m in all_metrics],
+        'Matthews Correlation Coefficient': [m[3] for m in all_metrics], 
+        'Total Frauds Missed': [m[4] for m in all_metrics]
+    }
+    
+    comparison_df = pd.DataFrame(model_data).sort_values(by='Matthews Correlation Coefficient', ascending=False)
+
+    print("\n" + "="*120 + "\n                       FINAL MODEL COMPARISON REPORT\n" + "="*120)
+    print(comparison_df.to_string(index=False, formatters={
+        'Precision': '{:,.2%}'.format, 'Recall': '{:,.2%}'.format, 'F1-Score': '{:,.2%}'.format,
+        'Matthews Correlation Coefficient': '{:,.4f}'.format, 'Total Frauds Missed': '{:,.0f}'.format 
+    }))
+    print("="*120)
+    print("\nConclusion: Based on the benchmarking data, the standard RandomForestClassifier (with SMOTE) is selected as the best-fit production model."\
+          "While models like Logistic Regression missed fewer total frauds (10 vs 17), they suffered from a very low precision rate of ~13%,"\
+          "which would result in thousands of innocent customer accounts being frozen by mistake."\
+          "The RandomForestClassifier (with SMOTE) strikes a better balance between precision and recall, "\
+          "making it the most suitable choice for deployment in a real-world fraud detection scenario.\n")
+    print("\n--- Evaluation Completed ---\n")
+
+if __name__ == "__main__":
+    model_evaluation()

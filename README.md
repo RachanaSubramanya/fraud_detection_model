@@ -1,9 +1,10 @@
 # Fraud detection model
 
 _This project features an end-to-end machine learning pipeline engineered to detect fraudulent credit card transactions. To combat extreme class imbalance, the project utilizes advanced resampling techniques like SMOTE alongside robust evaluation metrics suited for highly skewed datasets._
-_The repository is structured into two focused components:_
-_* compiled_model_results.py (Evaluation): A benchmarking pipeline that analyzes multiple machine learning architectures side-by-side to track precision-recall trade-offs and evaluate hyperparameter grid searches._
-_* fraud_detection_model.py (Production): An isolated script deploying the finalized RandomForestClassifier, which was proven through experimentation to be the most operationally stable and efficient model._
+_The repository `scripts/` is structured into three focused components:_
+_* algorithms.py (Core Library Engine): A centralized mathematical warehouse housing custom-architecture utility functions for seven distinct Machine learning algorithms to isolate complex financial fraud vectors._
+_* compiled_model_results.py (Evaluation): A benchmarking pipeline that analyzes the Machine Learning architectures side-by-side to track precision-recall trade-offs and evaluate hyperparameter grid searches._
+_* flagship_model.py (Production): An isolated script deploying the finalized RandomForestClassifier, which was proven through experimentation to be the most operationally stable and efficient model._
 
 ---
 
@@ -53,7 +54,7 @@ The pipeline expects a structured format to locate files dynamically across diff
 The infrastructure of this pipeline is built entirely in Python, utilizing industry-standard libraries for data science and statistical modeling:
 
 * **Core Engine:** [Python 3.8+](https://python.org)
-* **Development Environment:** Visual Studio Code
+* **Development Environment:** Visual Studio Code & PyCharm
 * **Data Manipulation:** [Pandas](https://pydata.org) & [NumPy](https://numpy.org)
 * **Machine Learning Pipeline:** [Scikit-Learn](https://scikit-learn.org)
 * **Imbalance & Resampling:** [Imbalanced-Learn (SMOTE)](https://imbalanced-learn.org)
@@ -72,16 +73,18 @@ fraud_detection_model/
 │   README.md
 │   requirements.txt
 │
-├───data
+├───data/
 │       creditcard_data.csv
 │
-├───plots
+├───plots/
 │       confusion_matrix.png
 │       correlation_matrix.png
 │
-└───scripts
+└───scripts/
+        algorithms.py
         compiled_model_results.py
-        fraud_detection_model.py
+        flagship_model.py
+        __init__.py
 ```
 
 ---
@@ -168,28 +171,39 @@ The script expects a specific folder structure to locate the dataset. Make sure 
 fraud_detection_model/
 ├── data/
 │   └── creditcard_data.csv   <-- Place your dataset here
-└── scripts/
-    └── fraud_detection_model.py   <-- Your python script file
+└── scripts/             
+    └── algorithms.py                  <-- Place the script files here
+        compiled_model_results.py        
+        flagship_model.py            
 ```
 
-### Running the Program
-Navigate to the directory containing the script `fraud_detection_model.py` and run it using Python:
+### Understanding the Experimentation process
+step 1: Navigate to the directory containing the script `algorithms.py` and run it using Python:
 
 ```bash
 cd scripts
-python fraud_detection_model.py
+python algorithms.py
 ```
 
-*Note: Running the program will output model performance metrics (Accuracy, Precision, Recall, F1-Score, MCC) directly to your terminal, while 2 visual plots (Correlation Heatmap and Confusion Matrix) will be generated in the background and saved into the folder `plots/` within the main project repository.*
-
-
-### Understanding the Experimentation process (Optional)
-Navigate to the directory containing the script `compiled_model_results.py` and run it using Python:
+step 2: Navigate to the directory containing the script `compiled_model_results.py` and run it using Python:
 
 ```bash
 cd scripts
 python compiled_model_results.py
 ```
+*Note: Running the program will output a grid comparing the machine learning algorithms to decide on the most efficient algorithm based on the metrics of Accuracy score, Precision score, Recall score and most importantly Matthew's Correlation Coefficient score.*
+
+
+### Running the Model
+Navigate to the directory containing the script `flagship_model.py` and run it using Python:
+
+```bash
+cd scripts
+python flagship_model.py
+```
+
+*Note: Running the program will output model performance metrics (Accuracy, Precision, Recall, F1-Score, MCC) directly to your terminal, while 2 visual plots (Correlation Heatmap and Confusion Matrix) will be generated in the background and saved into the folder `plots/` within the main project repository.*
+
 
 ### Environment Cleanup
 
