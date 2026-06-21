@@ -58,7 +58,7 @@ def fraud_detection_model():
 
     print(f"Total frauds missed: {len(false_neg)}")
     print("Amount details of missed transactions (Sorted Low to High):")
-    print(false_neg[['Time', 'Amount', 'Actual', 'Predicted']].sort_values(by='Amount', ascending=True).to_string(index=False))
+    print(false_neg[['Time', 'Amount']].sort_values(by='Amount', ascending=True).to_string(index=False))
 
 
     # --- 4. Generating Confusion Matrix Visual ---
